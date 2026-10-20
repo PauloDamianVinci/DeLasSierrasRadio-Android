@@ -30,7 +30,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val root = ScrollView(this).apply { setBackgroundColor(Color.rgb(47, 0, 28)); fillViewport = true }
+        
+val root = ScrollView(this).apply {
+    setBackgroundColor(Color.rgb(47, 0, 28))
+    isFillViewport = true
+}
+
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(26.dp, 54.dp, 26.dp, 30.dp) }
         root.addView(content)
         fun text(value: String, size: Float, color: Int = Color.WHITE, bold: Boolean = false): TextView = TextView(this).apply {
