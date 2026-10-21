@@ -1,5 +1,5 @@
-# DE LAS SIERRAS RADIO — Android v5
+# DE LAS SIERRAS RADIO — Android v6
 
-Based on the tested v4. Removed current-song album art and the text "Music continues with your screen locked". Now Playing, Recently Played, sharing, connection status and Media3 background audio are preserved.
+Adds a manual ES / EN selector at the top of the screen. The chosen language persists across launches using SharedPreferences. Interface strings, connection status, metadata fallbacks and share text are translated. Artist names, song titles and the station brand remain unchanged.
 
-Build in GitHub Actions on branch `version-5`.
+The existing Media3 radio service is unchanged. GitHub Actions can compile the APK via workflow_dispatch on branch `version-6`.

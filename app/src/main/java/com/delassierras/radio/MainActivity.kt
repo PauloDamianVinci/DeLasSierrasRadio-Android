@@ -36,6 +36,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var nowPlaying: TextView
     private lateinit var recentTracks: TextView
     private lateinit var connectionIndicator: TextView
+    private var language = "en"
+    private fun tr(en: String, es: String): String = if (language == "es") es else en
     private val apiUrl = "https://server.streamcasthd.com/cp/get_info.php?p=8682"
     private val handler = Handler(Looper.getMainLooper())
     private val network = Executors.newSingleThreadExecutor()
@@ -57,6 +59,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        language = getSharedPreferences("radio_settings", MODE_PRIVATE)
+            .getString("language", "en") ?: "en"
         val root = ScrollView(this).apply {
             setBackgroundColor(backgroundColor)
             isFillViewport = true
@@ -66,6 +70,35 @@ class MainActivity : ComponentActivity() {
             gravity = Gravity.CENTER_HORIZONTAL
         }
         root.addView(content)
+
+        val languageRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            setPadding(12.dp, 8.dp, 16.dp, 0)
+        }
+        fun languageButton(code: String, caption: String): Button = Button(this).apply {
+            text = caption
+            textSize = 13f
+            isAllCaps = false
+            setTextColor(if (language == code) cyan else Color.WHITE)
+            background = GradientDrawable().apply {
+                setColor(if (language == code) Color.rgb(90, 15, 73) else backgroundColor)
+                cornerRadius = 16.dp.toFloat()
+                setStroke(1.dp, if (language == code) cyan else pink)
+            }
+            setOnClickListener {
+                if (language != code) {
+                    getSharedPreferences("radio_settings", MODE_PRIVATE)
+                        .edit().putString("language", code).apply()
+                    recreate()
+                }
+            }
+        }
+        languageRow.addView(languageButton("es", "ES"), LinearLayout.LayoutParams(62.dp, 38.dp))
+        languageRow.addView(languageButton("en", "EN"), LinearLayout.LayoutParams(62.dp, 38.dp).apply {
+            marginStart = 8.dp
+        })
+        content.addView(languageRow)
 
         val hero = FrameLayout(this)
         val heroImage = assetImage("mountains.jpg").apply { scaleType = ImageView.ScaleType.CENTER_CROP }
@@ -83,7 +116,7 @@ class MainActivity : ComponentActivity() {
         hero.addView(heroColumn, FrameLayout.LayoutParams(-1, -1))
         val logo = assetImage("logo.png").apply { scaleType = ImageView.ScaleType.FIT_CENTER }
         heroColumn.addView(logo, LinearLayout.LayoutParams(220.dp, 220.dp))
-        heroColumn.addView(label("COMMERCIAL-FREE  •  BROADCASTING 24/7", 12f, Color.WHITE, true))
+        heroColumn.addView(label(tr("COMMERCIAL-FREE  •  BROADCASTING 24/7", "SIN PUBLICIDAD  •  TRANSMITIENDO 24/7"), 12f, Color.WHITE, true))
         heroColumn.addView(label("80s  •  90s  •  2000s", 15f, cyan, true).apply {
             setPadding(0, 10.dp, 0, 0)
         })
@@ -95,17 +128,17 @@ class MainActivity : ComponentActivity() {
             setPadding(24.dp, 12.dp, 24.dp, 28.dp)
         }
         content.addView(playerArea, LinearLayout.LayoutParams(-1, -2))
-        connectionIndicator = label("●  RADIO EN VIVO", 15f, pink, true)
+        connectionIndicator = label(tr("●  LIVE RADIO", "●  RADIO EN VIVO"), 15f, pink, true)
         playerArea.addView(connectionIndicator)
-        playerArea.addView(label("NOW PLAYING", 13f, cyan, true).apply {
+        playerArea.addView(label(tr("NOW PLAYING", "SUENA AHORA"), 13f, cyan, true).apply {
             setPadding(0, 18.dp, 0, 5.dp)
         })
-        nowPlaying = label("Loading song information…", 17f, Color.WHITE, true)
+        nowPlaying = label(tr("Loading song information…", "Cargando información musical…"), 17f, Color.WHITE, true)
         playerArea.addView(nowPlaying)
-        status = label("Ready to listen", 17f, Color.WHITE, true)
+        status = label(tr("Ready to listen", "Lista para escuchar"), 17f, Color.WHITE, true)
         playerArea.addView(status.apply { setPadding(0, 14.dp, 0, 20.dp) })
         playButton = Button(this).apply {
-            text = "▶  PLAY"
+            text = tr("▶  PLAY", "▶  REPRODUCIR")
             textSize = 21f
             isAllCaps = false
             setTextColor(Color.WHITE)
@@ -118,11 +151,11 @@ class MainActivity : ComponentActivity() {
             }
         }
         playerArea.addView(playButton, LinearLayout.LayoutParams(-1, 65.dp))
-        playerArea.addView(label("PLAYING GOOD MUSIC", 14f, cyan, true).apply {
+        playerArea.addView(label(tr("PLAYING GOOD MUSIC", "LA MEJOR MÚSICA"), 14f, cyan, true).apply {
             setPadding(0, 20.dp, 0, 0)
         })
         val shareButton = Button(this).apply {
-            text = "↗  SHARE RADIO"
+            text = tr("↗  SHARE RADIO", "↗  COMPARTIR RADIO")
             textSize = 15f
             isAllCaps = false
             setTextColor(cyan)
@@ -137,10 +170,10 @@ class MainActivity : ComponentActivity() {
         playerArea.addView(label("DE LAS SIERRAS  •  PLAYING GOOD MUSIC", 11f, Color.LTGRAY).apply {
             setPadding(0, 18.dp, 0, 0)
         })
-        playerArea.addView(label("RECENTLY PLAYED", 15f, cyan, true).apply {
+        playerArea.addView(label(tr("RECENTLY PLAYED", "ÚLTIMAS CANCIONES"), 15f, cyan, true).apply {
             setPadding(0, 25.dp, 0, 12.dp)
         })
-        recentTracks = label("Loading recent tracks…", 14f, Color.WHITE).apply {
+        recentTracks = label(tr("Loading recent tracks…", "Cargando canciones anteriores…"), 14f, Color.WHITE).apply {
             gravity = Gravity.START
             setLineSpacing(5.dp.toFloat(), 1f)
         }
@@ -172,7 +205,7 @@ class MainActivity : ComponentActivity() {
                     controller = future.get().also { it.addListener(listener) }
                     refresh()
                 } catch (e: Exception) {
-                    status.text = "Unable to connect to player"
+                    status.text = tr("Unable to connect to player", "No se pudo conectar con el reproductor")
                 }
             }, ContextCompat.getMainExecutor(this))
         }
@@ -180,20 +213,20 @@ class MainActivity : ComponentActivity() {
 
     private fun refresh() {
         val c = controller ?: return
-        playButton.text = if (c.isPlaying) "Ⅱ  PAUSE" else "▶  PLAY"
+        playButton.text = if (c.isPlaying) tr("Ⅱ  PAUSE", "Ⅱ  PAUSAR") else tr("▶  PLAY", "▶  REPRODUCIR")
         val message = when {
-            c.isPlaying -> "ON AIR"
-            c.playerError != null && c.playWhenReady -> "Connection interrupted — retrying"
-            c.playbackState == Player.STATE_BUFFERING -> "Connecting…"
-            c.playWhenReady -> "Connecting…"
-            else -> "Ready to listen"
+            c.isPlaying -> tr("ON AIR", "EN VIVO")
+            c.playerError != null && c.playWhenReady -> tr("Connection interrupted — retrying", "Conexión interrumpida — reintentando")
+            c.playbackState == Player.STATE_BUFFERING -> tr("Connecting…", "Conectando…")
+            c.playWhenReady -> tr("Connecting…", "Conectando…")
+            else -> tr("Ready to listen", "Lista para escuchar")
         }
         status.text = message
         connectionIndicator.text = when (message) {
-            "ON AIR" -> "●  LIVE RADIO"
-            "Connecting…" -> "◌  CONNECTING"
-            "Connection interrupted — retrying" -> "◌  RECONNECTING"
-            else -> "○  RADIO READY"
+            tr("ON AIR", "EN VIVO") -> tr("●  LIVE RADIO", "●  RADIO EN VIVO")
+            tr("Connecting…", "Conectando…") -> tr("◌  CONNECTING", "◌  CONECTANDO")
+            tr("Connection interrupted — retrying", "Conexión interrumpida — reintentando") -> tr("◌  RECONNECTING", "◌  RECONECTANDO")
+            else -> tr("○  RADIO READY", "○  RADIO LISTA")
         }
         connectionIndicator.setTextColor(if (c.isPlaying) cyan else pink)
     }
@@ -220,13 +253,13 @@ class MainActivity : ComponentActivity() {
                 handler.post {
                     if (!metadataActive || isFinishing || isDestroyed) return@post
                     nowPlaying.text = title
-                    recentTracks.text = tracks.joinToString("\n").ifBlank { "No recent tracks available" }
+                    recentTracks.text = tracks.joinToString("\n").ifBlank { tr("No recent tracks available", "No hay canciones anteriores disponibles") }
                 }
             } catch (_: Exception) {
                 handler.post {
                     if (metadataActive && !isFinishing && !isDestroyed) {
-                        if (nowPlaying.text == "Loading song information…") nowPlaying.text = "Song information unavailable"
-                        if (recentTracks.text == "Loading recent tracks…") recentTracks.text = "History temporarily unavailable"
+                        if (nowPlaying.text == tr("Loading song information…", "Cargando información musical…")) nowPlaying.text = tr("Song information unavailable", "Información musical no disponible")
+                        if (recentTracks.text == tr("Loading recent tracks…", "Cargando canciones anteriores…")) recentTracks.text = tr("History temporarily unavailable", "Historial temporalmente no disponible")
                     }
                 }
             }
@@ -241,7 +274,7 @@ class MainActivity : ComponentActivity() {
                 "Listen to DE LAS SIERRAS RADIO — Playing Good Music!\nhttps://www.delassierrasradio.com"
             )
         }
-        startActivity(Intent.createChooser(intent, "Share DE LAS SIERRAS RADIO"))
+        startActivity(Intent.createChooser(intent, tr("Share DE LAS SIERRAS RADIO", "Compartir DE LAS SIERRAS RADIO")))
     }
 
     private fun cleanText(value: String): String = Html.fromHtml(
