@@ -5,6 +5,13 @@ import android.graphics.Typeface
 import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.Html
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -25,6 +32,20 @@ class MainActivity : ComponentActivity() {
     private var controller: MediaController? = null
     private lateinit var playButton: Button
     private lateinit var status: TextView
+    private lateinit var nowPlaying: TextView
+    private lateinit var recentTracks: TextView
+    private lateinit var artwork: ImageView
+    private val apiUrl = "https://server.streamcasthd.com/cp/get_info.php?p=8682"
+    private val handler = Handler(Looper.getMainLooper())
+    private val network = Executors.newSingleThreadExecutor()
+    private var metadataActive = false
+    private val metadataPoll = object : Runnable {
+        override fun run() {
+            if (!metadataActive) return
+            loadMetadata()
+            handler.postDelayed(this, 15_000L)
+        }
+    }
     private val backgroundColor = Color.rgb(47, 0, 28)
     private val cyan = Color.rgb(60, 235, 245)
     private val pink = Color.rgb(255, 85, 188)
@@ -74,6 +95,16 @@ class MainActivity : ComponentActivity() {
         }
         content.addView(playerArea, LinearLayout.LayoutParams(-1, -2))
         playerArea.addView(label("●  LIVE RADIO", 16f, pink, true))
+        playerArea.addView(label("NOW PLAYING", 13f, cyan, true).apply {
+            setPadding(0, 18.dp, 0, 5.dp)
+        })
+        nowPlaying = label("Loading song information…", 17f, Color.WHITE, true)
+        playerArea.addView(nowPlaying)
+        artwork = assetImage("music.png").apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setPadding(0, 10.dp, 0, 10.dp)
+        }
+        playerArea.addView(artwork, LinearLayout.LayoutParams(115.dp, 115.dp))
         status = label("Ready to listen", 17f, Color.WHITE, true)
         playerArea.addView(status.apply { setPadding(0, 14.dp, 0, 20.dp) })
         playButton = Button(this).apply {
@@ -101,6 +132,14 @@ class MainActivity : ComponentActivity() {
         playerArea.addView(label("DE LAS SIERRAS  •  PLAYING GOOD MUSIC", 11f, Color.LTGRAY).apply {
             setPadding(0, 16.dp, 0, 0)
         })
+        playerArea.addView(label("RECENTLY PLAYED", 15f, cyan, true).apply {
+            setPadding(0, 25.dp, 0, 12.dp)
+        })
+        recentTracks = label("Loading recent tracks…", 14f, Color.WHITE).apply {
+            gravity = Gravity.START
+            setLineSpacing(5.dp.toFloat(), 1f)
+        }
+        playerArea.addView(recentTracks, LinearLayout.LayoutParams(-1, -2))
         setContentView(root)
     }
 
@@ -119,6 +158,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        metadataActive = true
+        handler.post(metadataPoll)
         val token = SessionToken(this, android.content.ComponentName(this, RadioService::class.java))
         controllerFuture = MediaController.Builder(this, token).buildAsync().also { future ->
             future.addListener({
@@ -143,7 +184,64 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun loadMetadata() {
+        network.execute {
+            try {
+                val conn = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000
+                    readTimeout = 8000
+                    setRequestProperty("Accept", "application/json")
+                }
+                val body = try {
+                    conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                } finally {
+                    conn.disconnect()
+                }
+                val data = JSONObject(body)
+                val title = cleanText(data.optString("title")).ifBlank { "DE LAS SIERRAS RADIO" }
+                val history = data.optJSONArray("history")
+                val tracks = (0 until minOf(history?.length() ?: 0, 10)).mapNotNull { index ->
+                    history?.optString(index)?.let { cleanText(it) }?.takeIf { it.isNotBlank() }
+                }
+                handler.post {
+                    if (!metadataActive || isFinishing || isDestroyed) return@post
+                    nowPlaying.text = title
+                    recentTracks.text = tracks.joinToString("\n").ifBlank { "No recent tracks available" }
+                }
+                // Album art is optional. It is fetched separately so metadata remains responsive.
+                val artUrl = data.optString("art")
+                if (artUrl.startsWith("https://")) {
+                    try {
+                        val imageConn = (URL(artUrl).openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 6000
+                            readTimeout = 6000
+                        }
+                        val bitmap = try {
+                            imageConn.inputStream.use { BitmapFactory.decodeStream(it) }
+                        } finally { imageConn.disconnect() }
+                        if (bitmap != null) handler.post {
+                            if (metadataActive && !isFinishing && !isDestroyed) artwork.setImageBitmap(bitmap)
+                        }
+                    } catch (_: Exception) { /* Keep default artwork. */ }
+                }
+            } catch (_: Exception) {
+                handler.post {
+                    if (metadataActive && !isFinishing && !isDestroyed) {
+                        if (nowPlaying.text == "Loading song information…") nowPlaying.text = "Song information unavailable"
+                        if (recentTracks.text == "Loading recent tracks…") recentTracks.text = "History temporarily unavailable"
+                    }
+                }
+            }
+        }
+    }
+
+    private fun cleanText(value: String): String = Html.fromHtml(
+        value.replace(Regex("^\\s*\\d+\\.\\)\\s*"), ""), Html.FROM_HTML_MODE_LEGACY
+    ).toString().trim()
+
     override fun onStop() {
+        metadataActive = false
+        handler.removeCallbacks(metadataPoll)
         controller?.removeListener(listener)
         controller = null
         controllerFuture?.let { MediaController.releaseFuture(it) }

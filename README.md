@@ -1,13 +1,12 @@
-# DE LAS SIERRAS RADIO — Android v2
+# DE LAS SIERRAS RADIO — Android v3 (prueba)
 
-Diseño con recursos gráficos originales. Audio en segundo plano mediante Media3 MediaSessionService.
+Versión 3: Now Playing, historial de diez canciones y carátula opcional desde la API pública de SonicPanel. Consultas cada 15 segundos mientras la pantalla está activa. La reproducción en segundo plano permanece a cargo de Media3/RadioService.
 
-Stream: https://server.streamcasthd.com/8682/stream
+API pública: https://server.streamcasthd.com/cp/get_info.php?p=8682
+Audio: https://server.streamcasthd.com/8682/stream
 
-## Actualizar en GitHub desde navegador
+## Compilación
 
-Cargar/reemplazar archivos de este proyecto respetando rutas. El workflow `.github/workflows/android.yml` debe existir.
+Subir a una rama nueva `version-3` y ejecutar el workflow `Android APK` con `Run workflow`, seleccionando `version-3`. El ZIP incluye todos los archivos y no necesita Android Studio local.
 
-La compilación `assembleDebug` genera un APK de pruebas. Para una versión pública se requiere firmar una compilación release con una clave estable y resguardada.
-
-No se incluye aún historial ni título dinámico: requieren integración de metadatos adicional.
+Esta versión no se ha compilado ni probado en un teléfono. Guardar la versión 2 como respaldo.
