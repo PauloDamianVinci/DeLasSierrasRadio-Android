@@ -263,7 +263,7 @@ class MainActivity : ComponentActivity() {
             type = "text/plain"
             putExtra(
                 Intent.EXTRA_TEXT,
-                "Listen to DE LAS SIERRAS RADIO — Playing Good Music!\nhttps://www.delassierrasradio.com"
+                tr("Listen to DE LAS SIERRAS RADIO — Playing Good Music!\nhttps://www.delassierrasradio.com", "Escucha DE LAS SIERRAS RADIO — ¡La mejor música!\nhttps://www.delassierrasradio.com")
             )
         }
         startActivity(Intent.createChooser(intent, tr("Share DE LAS SIERRAS RADIO", "Compartir DE LAS SIERRAS RADIO")))

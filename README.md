@@ -1,9 +1,5 @@
-# DE LAS SIERRAS RADIO — Android v7
+# DE LAS SIERRAS RADIO — Android v9
 
-- Initial language follows the device locale: Spanish for `es`, English for all other locales.
-- ES/EN buttons remain available. Manual selection is saved and overrides automatic selection on future launches.
-- Removed the translated "Ready to listen", "PLAYING GOOD MUSIC" and "LIVE RADIO / RADIO READY" labels.
-- Connection progress/errors still appear when needed.
-- Station branding and audio playback service are unchanged.
+Spanish share message now uses neutral “Escucha” instead of regional “Escuchá”. No other functional changes.
 
-Build on GitHub Actions from branch `version-7` (manual workflow dispatch). Not yet compiled/tested.
+Build from branch `version-9` using GitHub Actions. Not yet compiled or device-tested.
