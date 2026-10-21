@@ -1,7 +1,5 @@
-# DE LAS SIERRAS RADIO — Android v10
+# DE LAS SIERRAS RADIO — v12 Live Stop (from stable v10)
 
-- App display label: De las Sierras - Playing Good Music
-- Launcher icon: original neon mountains station logo, including density-specific legacy icons and adaptive icon assets.
-- Application ID and Media3 streaming service unchanged.
+Replaces in-app pause with STOP (discard buffered audio), and PLAY with a fresh live-stream connection. A pause command from lock-screen/headset/media notification also discards buffered audio in RadioService, so it cannot resume stale audio. Existing Media3 service, metadata, bilingual UI, app icon and background playback remain. Android may still display a standard pause icon in system media controls, but its behavior is stop-and-reset.
 
-Build from `version-10` branch with GitHub Actions (manual workflow dispatch). Not yet compiled or tested on Android.
+Build on GitHub Actions from a new branch `version-12-live-stop` created from `version-10`. This code has not been compiled or tested on a device.

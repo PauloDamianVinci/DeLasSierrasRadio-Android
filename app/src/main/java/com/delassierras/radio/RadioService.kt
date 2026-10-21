@@ -55,7 +55,15 @@ class RadioService : MediaSessionService() {
                     }
                 }
                 override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                    if (!playWhenReady) handler.removeCallbacks(retry)
+                    if (!playWhenReady) {
+                        // Radio is live: discard buffered audio instead of retaining a paused position.
+                        handler.removeCallbacks(retry)
+                        retries = 0
+                        stop()
+                    } else if (playbackState == Player.STATE_IDLE) {
+                        // Start a fresh connection to the live stream after a stop.
+                        prepare()
+                    }
                 }
             })
             prepare()

@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity() {
                 cornerRadius = 30.dp.toFloat()
             }
             setOnClickListener {
-                controller?.let { c -> if (c.isPlaying) c.pause() else c.play() }
+                controller?.let { c -> if (c.playWhenReady) c.pause() else c.play() }
             }
         }
         playerArea.addView(playButton, LinearLayout.LayoutParams(-1, 65.dp))
@@ -212,7 +212,7 @@ class MainActivity : ComponentActivity() {
 
     private fun refresh() {
         val c = controller ?: return
-        playButton.text = if (c.isPlaying) tr("Ⅱ  PAUSE", "Ⅱ  PAUSAR") else tr("▶  PLAY", "▶  REPRODUCIR")
+        playButton.text = if (c.playWhenReady) tr("■  STOP", "■  DETENER") else tr("▶  PLAY", "▶  REPRODUCIR")
         // No idle, on-air, or radio-ready labels. Show only connection problems/progress.
         status.text = when {
             c.playerError != null && c.playWhenReady ->
