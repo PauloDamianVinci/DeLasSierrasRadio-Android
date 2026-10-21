@@ -35,9 +35,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var status: TextView
     private lateinit var nowPlaying: TextView
     private lateinit var recentTracks: TextView
-    private lateinit var artwork: ImageView
     private lateinit var connectionIndicator: TextView
-    private var lastArtworkUrl: String? = null
     private val apiUrl = "https://server.streamcasthd.com/cp/get_info.php?p=8682"
     private val handler = Handler(Looper.getMainLooper())
     private val network = Executors.newSingleThreadExecutor()
@@ -104,11 +102,6 @@ class MainActivity : ComponentActivity() {
         })
         nowPlaying = label("Loading song information…", 17f, Color.WHITE, true)
         playerArea.addView(nowPlaying)
-        artwork = assetImage("music.png").apply {
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            setPadding(0, 10.dp, 0, 10.dp)
-        }
-        playerArea.addView(artwork, LinearLayout.LayoutParams(155.dp, 155.dp))
         status = label("Ready to listen", 17f, Color.WHITE, true)
         playerArea.addView(status.apply { setPadding(0, 14.dp, 0, 20.dp) })
         playButton = Button(this).apply {
@@ -127,9 +120,6 @@ class MainActivity : ComponentActivity() {
         playerArea.addView(playButton, LinearLayout.LayoutParams(-1, 65.dp))
         playerArea.addView(label("PLAYING GOOD MUSIC", 14f, cyan, true).apply {
             setPadding(0, 20.dp, 0, 0)
-        })
-        playerArea.addView(label("Music continues with your screen locked", 12f, Color.LTGRAY).apply {
-            setPadding(0, 8.dp, 0, 14.dp)
         })
         val shareButton = Button(this).apply {
             text = "↗  SHARE RADIO"
@@ -232,31 +222,6 @@ class MainActivity : ComponentActivity() {
                     nowPlaying.text = title
                     recentTracks.text = tracks.joinToString("\n").ifBlank { "No recent tracks available" }
                 }
-                // Album art is optional. It is fetched separately so metadata remains responsive.
-                val artUrl = data.optString("art")
-                if (artUrl != lastArtworkUrl) {
-                    lastArtworkUrl = artUrl
-                    handler.post {
-                        if (metadataActive && !isFinishing && !isDestroyed) {
-                            artwork.setImageDrawable(null)
-                            assets.open("music.png").use { artwork.setImageBitmap(BitmapFactory.decodeStream(it)) }
-                        }
-                    }
-                }
-                if (artUrl.startsWith("https://")) {
-                    try {
-                        val imageConn = (URL(artUrl).openConnection() as HttpURLConnection).apply {
-                            connectTimeout = 6000
-                            readTimeout = 6000
-                        }
-                        val bitmap = try {
-                            imageConn.inputStream.use { BitmapFactory.decodeStream(it) }
-                        } finally { imageConn.disconnect() }
-                        if (bitmap != null) handler.post {
-                            if (metadataActive && !isFinishing && !isDestroyed) artwork.setImageBitmap(bitmap)
-                        }
-                    } catch (_: Exception) { /* Keep default artwork. */ }
-                }
             } catch (_: Exception) {
                 handler.post {
                     if (metadataActive && !isFinishing && !isDestroyed) {
@@ -273,7 +238,7 @@ class MainActivity : ComponentActivity() {
             type = "text/plain"
             putExtra(
                 Intent.EXTRA_TEXT,
-                "Listen to DE LAS SIERRAS RADIO — Playing Good Music!\\nhttps://www.delassierrasradio.com"
+                "Listen to DE LAS SIERRAS RADIO — Playing Good Music!\nhttps://www.delassierrasradio.com"
             )
         }
         startActivity(Intent.createChooser(intent, "Share DE LAS SIERRAS RADIO"))

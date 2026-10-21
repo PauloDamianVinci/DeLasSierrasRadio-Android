@@ -1,8 +1,5 @@
-# DE LAS SIERRAS RADIO — Android v4
+# DE LAS SIERRAS RADIO — Android v5
 
-Based on the tested v3. Improvements: clearer connection states, refreshed artwork handling, streamlined player layout and native Android share chooser. The streaming service remains unchanged.
+Based on the tested v4. Removed current-song album art and the text "Music continues with your screen locked". Now Playing, Recently Played, sharing, connection status and Media3 background audio are preserved.
 
-Stream: https://server.streamcasthd.com/8682/stream
-Public metadata: https://server.streamcasthd.com/cp/get_info.php?p=8682
-
-Build using GitHub Actions → Build Android APK → Run workflow → branch version-4.
+Build in GitHub Actions on branch `version-5`.
