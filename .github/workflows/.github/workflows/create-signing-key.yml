@@ -1,0 +1,34 @@
+name: Create release signing key (one time)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  create-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Generate permanent signing key
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RADIO_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RADIO_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$KEYSTORE_PASSWORD" || -z "$KEY_PASSWORD" ]]; then
+            echo 'Missing RADIO_KEYSTORE_PASSWORD or RADIO_KEY_PASSWORD secrets.' >&2
+            exit 1
+          fi
+          keytool -genkeypair -v -storetype PKCS12 \
+            -keystore radio-release.p12 \
+            -alias radio-release -keyalg RSA -keysize 3072 -validity 10000 \
+            -dname 'CN=De Las Sierras Radio, O=De Las Sierras Radio' \
+            -storepass:env KEYSTORE_PASSWORD -keypass:env KEY_PASSWORD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PRIVATE-radio-signing-key-KEEP-SAFE
+          path: radio-release.p12
+          retention-days: 1
