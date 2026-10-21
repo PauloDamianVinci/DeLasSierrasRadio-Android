@@ -1,6 +1,7 @@
 package com.delassierras.radio
 
 import android.content.Intent
+import java.util.Locale
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.BitmapFactory
@@ -35,7 +36,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var status: TextView
     private lateinit var nowPlaying: TextView
     private lateinit var recentTracks: TextView
-    private lateinit var connectionIndicator: TextView
     private var language = "en"
     private fun tr(en: String, es: String): String = if (language == "es") es else en
     private val apiUrl = "https://server.streamcasthd.com/cp/get_info.php?p=8682"
@@ -59,8 +59,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Follow the phone language by default; a manual ES/EN choice takes precedence.
+        val deviceLanguage = if (Locale.getDefault().language.equals("es", ignoreCase = true)) "es" else "en"
         language = getSharedPreferences("radio_settings", MODE_PRIVATE)
-            .getString("language", "en") ?: "en"
+            .getString("language", null) ?: deviceLanguage
         val root = ScrollView(this).apply {
             setBackgroundColor(backgroundColor)
             isFillViewport = true
@@ -128,15 +130,13 @@ class MainActivity : ComponentActivity() {
             setPadding(24.dp, 12.dp, 24.dp, 28.dp)
         }
         content.addView(playerArea, LinearLayout.LayoutParams(-1, -2))
-        connectionIndicator = label(tr("●  LIVE RADIO", "●  RADIO EN VIVO"), 15f, pink, true)
-        playerArea.addView(connectionIndicator)
         playerArea.addView(label(tr("NOW PLAYING", "SUENA AHORA"), 13f, cyan, true).apply {
-            setPadding(0, 18.dp, 0, 5.dp)
+            setPadding(0, 6.dp, 0, 5.dp)
         })
         nowPlaying = label(tr("Loading song information…", "Cargando información musical…"), 17f, Color.WHITE, true)
         playerArea.addView(nowPlaying)
-        status = label(tr("Ready to listen", "Lista para escuchar"), 17f, Color.WHITE, true)
-        playerArea.addView(status.apply { setPadding(0, 14.dp, 0, 20.dp) })
+        status = label("", 15f, pink, true)
+        playerArea.addView(status.apply { setPadding(0, 8.dp, 0, 12.dp) })
         playButton = Button(this).apply {
             text = tr("▶  PLAY", "▶  REPRODUCIR")
             textSize = 21f
@@ -151,9 +151,6 @@ class MainActivity : ComponentActivity() {
             }
         }
         playerArea.addView(playButton, LinearLayout.LayoutParams(-1, 65.dp))
-        playerArea.addView(label(tr("PLAYING GOOD MUSIC", "LA MEJOR MÚSICA"), 14f, cyan, true).apply {
-            setPadding(0, 20.dp, 0, 0)
-        })
         val shareButton = Button(this).apply {
             text = tr("↗  SHARE RADIO", "↗  COMPARTIR RADIO")
             textSize = 15f
@@ -166,7 +163,9 @@ class MainActivity : ComponentActivity() {
             }
             setOnClickListener { shareRadio() }
         }
-        playerArea.addView(shareButton, LinearLayout.LayoutParams(-1, 52.dp))
+        playerArea.addView(shareButton, LinearLayout.LayoutParams(-1, 52.dp).apply {
+            topMargin = 16.dp
+        })
         playerArea.addView(label("DE LAS SIERRAS  •  PLAYING GOOD MUSIC", 11f, Color.LTGRAY).apply {
             setPadding(0, 18.dp, 0, 0)
         })
@@ -214,21 +213,14 @@ class MainActivity : ComponentActivity() {
     private fun refresh() {
         val c = controller ?: return
         playButton.text = if (c.isPlaying) tr("Ⅱ  PAUSE", "Ⅱ  PAUSAR") else tr("▶  PLAY", "▶  REPRODUCIR")
-        val message = when {
-            c.isPlaying -> tr("ON AIR", "EN VIVO")
-            c.playerError != null && c.playWhenReady -> tr("Connection interrupted — retrying", "Conexión interrumpida — reintentando")
-            c.playbackState == Player.STATE_BUFFERING -> tr("Connecting…", "Conectando…")
-            c.playWhenReady -> tr("Connecting…", "Conectando…")
-            else -> tr("Ready to listen", "Lista para escuchar")
+        // No idle, on-air, or radio-ready labels. Show only connection problems/progress.
+        status.text = when {
+            c.playerError != null && c.playWhenReady ->
+                tr("Connection interrupted — retrying", "Conexión interrumpida — reintentando")
+            c.playbackState == Player.STATE_BUFFERING || (c.playWhenReady && !c.isPlaying) ->
+                tr("Connecting…", "Conectando…")
+            else -> ""
         }
-        status.text = message
-        connectionIndicator.text = when (message) {
-            tr("ON AIR", "EN VIVO") -> tr("●  LIVE RADIO", "●  RADIO EN VIVO")
-            tr("Connecting…", "Conectando…") -> tr("◌  CONNECTING", "◌  CONECTANDO")
-            tr("Connection interrupted — retrying", "Conexión interrumpida — reintentando") -> tr("◌  RECONNECTING", "◌  RECONECTANDO")
-            else -> tr("○  RADIO READY", "○  RADIO LISTA")
-        }
-        connectionIndicator.setTextColor(if (c.isPlaying) cyan else pink)
     }
 
     private fun loadMetadata() {

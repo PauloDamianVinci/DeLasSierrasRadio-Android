@@ -1,5 +1,9 @@
-# DE LAS SIERRAS RADIO — Android v6
+# DE LAS SIERRAS RADIO — Android v7
 
-Adds a manual ES / EN selector at the top of the screen. The chosen language persists across launches using SharedPreferences. Interface strings, connection status, metadata fallbacks and share text are translated. Artist names, song titles and the station brand remain unchanged.
+- Initial language follows the device locale: Spanish for `es`, English for all other locales.
+- ES/EN buttons remain available. Manual selection is saved and overrides automatic selection on future launches.
+- Removed the translated "Ready to listen", "PLAYING GOOD MUSIC" and "LIVE RADIO / RADIO READY" labels.
+- Connection progress/errors still appear when needed.
+- Station branding and audio playback service are unchanged.
 
-The existing Media3 radio service is unchanged. GitHub Actions can compile the APK via workflow_dispatch on branch `version-6`.
+Build on GitHub Actions from branch `version-7` (manual workflow dispatch). Not yet compiled/tested.
