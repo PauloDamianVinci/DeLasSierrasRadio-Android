@@ -1,5 +1,6 @@
 package com.delassierras.radio
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.BitmapFactory
@@ -35,6 +36,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var nowPlaying: TextView
     private lateinit var recentTracks: TextView
     private lateinit var artwork: ImageView
+    private lateinit var connectionIndicator: TextView
+    private var lastArtworkUrl: String? = null
     private val apiUrl = "https://server.streamcasthd.com/cp/get_info.php?p=8682"
     private val handler = Handler(Looper.getMainLooper())
     private val network = Executors.newSingleThreadExecutor()
@@ -94,7 +97,8 @@ class MainActivity : ComponentActivity() {
             setPadding(24.dp, 12.dp, 24.dp, 28.dp)
         }
         content.addView(playerArea, LinearLayout.LayoutParams(-1, -2))
-        playerArea.addView(label("●  LIVE RADIO", 16f, pink, true))
+        connectionIndicator = label("●  RADIO EN VIVO", 15f, pink, true)
+        playerArea.addView(connectionIndicator)
         playerArea.addView(label("NOW PLAYING", 13f, cyan, true).apply {
             setPadding(0, 18.dp, 0, 5.dp)
         })
@@ -104,7 +108,7 @@ class MainActivity : ComponentActivity() {
             scaleType = ImageView.ScaleType.FIT_CENTER
             setPadding(0, 10.dp, 0, 10.dp)
         }
-        playerArea.addView(artwork, LinearLayout.LayoutParams(115.dp, 115.dp))
+        playerArea.addView(artwork, LinearLayout.LayoutParams(155.dp, 155.dp))
         status = label("Ready to listen", 17f, Color.WHITE, true)
         playerArea.addView(status.apply { setPadding(0, 14.dp, 0, 20.dp) })
         playButton = Button(this).apply {
@@ -122,15 +126,26 @@ class MainActivity : ComponentActivity() {
         }
         playerArea.addView(playButton, LinearLayout.LayoutParams(-1, 65.dp))
         playerArea.addView(label("PLAYING GOOD MUSIC", 14f, cyan, true).apply {
-            setPadding(0, 22.dp, 0, 0)
+            setPadding(0, 20.dp, 0, 0)
         })
         playerArea.addView(label("Music continues with your screen locked", 12f, Color.LTGRAY).apply {
-            setPadding(0, 8.dp, 0, 20.dp)
+            setPadding(0, 8.dp, 0, 14.dp)
         })
-        val music = assetImage("music.png").apply { scaleType = ImageView.ScaleType.FIT_CENTER; alpha = 0.85f }
-        playerArea.addView(music, LinearLayout.LayoutParams(95.dp, 95.dp))
+        val shareButton = Button(this).apply {
+            text = "↗  SHARE RADIO"
+            textSize = 15f
+            isAllCaps = false
+            setTextColor(cyan)
+            background = GradientDrawable().apply {
+                setColor(backgroundColor)
+                setStroke(2.dp, cyan)
+                cornerRadius = 25.dp.toFloat()
+            }
+            setOnClickListener { shareRadio() }
+        }
+        playerArea.addView(shareButton, LinearLayout.LayoutParams(-1, 52.dp))
         playerArea.addView(label("DE LAS SIERRAS  •  PLAYING GOOD MUSIC", 11f, Color.LTGRAY).apply {
-            setPadding(0, 16.dp, 0, 0)
+            setPadding(0, 18.dp, 0, 0)
         })
         playerArea.addView(label("RECENTLY PLAYED", 15f, cyan, true).apply {
             setPadding(0, 25.dp, 0, 12.dp)
@@ -176,12 +191,21 @@ class MainActivity : ComponentActivity() {
     private fun refresh() {
         val c = controller ?: return
         playButton.text = if (c.isPlaying) "Ⅱ  PAUSE" else "▶  PLAY"
-        status.text = when {
+        val message = when {
             c.isPlaying -> "ON AIR"
+            c.playerError != null && c.playWhenReady -> "Connection interrupted — retrying"
             c.playbackState == Player.STATE_BUFFERING -> "Connecting…"
-            c.playerError != null -> "Connection interrupted — retrying"
+            c.playWhenReady -> "Connecting…"
             else -> "Ready to listen"
         }
+        status.text = message
+        connectionIndicator.text = when (message) {
+            "ON AIR" -> "●  LIVE RADIO"
+            "Connecting…" -> "◌  CONNECTING"
+            "Connection interrupted — retrying" -> "◌  RECONNECTING"
+            else -> "○  RADIO READY"
+        }
+        connectionIndicator.setTextColor(if (c.isPlaying) cyan else pink)
     }
 
     private fun loadMetadata() {
@@ -210,6 +234,15 @@ class MainActivity : ComponentActivity() {
                 }
                 // Album art is optional. It is fetched separately so metadata remains responsive.
                 val artUrl = data.optString("art")
+                if (artUrl != lastArtworkUrl) {
+                    lastArtworkUrl = artUrl
+                    handler.post {
+                        if (metadataActive && !isFinishing && !isDestroyed) {
+                            artwork.setImageDrawable(null)
+                            assets.open("music.png").use { artwork.setImageBitmap(BitmapFactory.decodeStream(it)) }
+                        }
+                    }
+                }
                 if (artUrl.startsWith("https://")) {
                     try {
                         val imageConn = (URL(artUrl).openConnection() as HttpURLConnection).apply {
@@ -233,6 +266,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun shareRadio() {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(
+                Intent.EXTRA_TEXT,
+                "Listen to DE LAS SIERRAS RADIO — Playing Good Music!\\nhttps://www.delassierrasradio.com"
+            )
+        }
+        startActivity(Intent.createChooser(intent, "Share DE LAS SIERRAS RADIO"))
     }
 
     private fun cleanText(value: String): String = Html.fromHtml(
