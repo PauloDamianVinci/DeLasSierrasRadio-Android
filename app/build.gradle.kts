@@ -12,6 +12,24 @@ android {
         versionCode = 12
         versionName = "1.8.0"
     }
+    // Signing credentials are injected only by GitHub Actions; never committed.
+    signingConfigs {
+        create("publicRelease") {
+            val path = System.getenv("RADIO_KEYSTORE_PATH")
+            if (!path.isNullOrBlank()) {
+                storeFile = file(path)
+                storePassword = System.getenv("RADIO_KEYSTORE_PASSWORD")
+                keyAlias = "radio-release"
+                keyPassword = System.getenv("RADIO_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("publicRelease")
+            isMinifyEnabled = false
+        }
+    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
 }
