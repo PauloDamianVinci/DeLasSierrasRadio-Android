@@ -1,5 +1,7 @@
-# DE LAS SIERRAS RADIO — Android v9
+# DE LAS SIERRAS RADIO — Android v10
 
-Spanish share message now uses neutral “Escucha” instead of regional “Escuchá”. No other functional changes.
+- App display label: De las Sierras - Playing Good Music
+- Launcher icon: original neon mountains station logo, including density-specific legacy icons and adaptive icon assets.
+- Application ID and Media3 streaming service unchanged.
 
-Build from branch `version-9` using GitHub Actions. Not yet compiled or device-tested.
+Build from `version-10` branch with GitHub Actions (manual workflow dispatch). Not yet compiled or tested on Android.
